@@ -1,0 +1,110 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 10px;
+  width: 380px;
+  background: linear-gradient(135deg, #eef2f7, #dbe9f4);
+  color: #2c3e50;
+}
+
+h2 {
+  text-align: center;
+  color: #1f4e79;
+}
+
+#timer {
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+  margin-bottom: 10px;
+  color: #27ae60;
+}
+
+.inputs input {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+#addParamBtn {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 6px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.controls {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+
+#startBtn { background: #27ae60; }
+#stopBtn { background: #e74c3c; }
+#exportBtn { background: #2980b9; }
+#clearBtn { background: #7f8c8d; }
+
+.logs-section {
+  margin-top: 12px;
+}
+
+#summaryBox {
+  background: #ecf6ff;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-weight: bold;
+  text-align: center;
+  color: #1f4e79;
+}
+
+#logsContainer {
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 6px;
+}
+
+#logsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+#logsTable th {
+  background: #1f4e79;
+  color: white;
+  padding: 6px;
+}
+
+#logsTable td {
+  padding: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.deleteBtn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}

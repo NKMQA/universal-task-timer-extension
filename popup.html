@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Universal Task Timer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <h2>Universal Task Timer</h2>
+
+  <div id="timer">Not Running</div>
+
+  <div class="inputs">
+    <input id="employee" placeholder="Employee Name">
+    <input id="report" placeholder="Report Name">
+    <input id="reportDate" type="date">
+  </div>
+
+  <div id="paramsContainer"></div>
+  <button id="addParamBtn">+ Add Parameter</button>
+
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="exportBtn">Export Logs</button>
+    <button id="clearBtn">Clear All</button>
+  </div>
+
+  <div class="logs-section">
+    <h3>Previous Logs</h3>
+
+    <div id="summaryBox">
+      Total Time: <span id="totalTime">0s</span>
+    </div>
+
+    <div id="logsContainer">
+      <table id="logsTable">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Report</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Duration</th>
+            <th>Parameters</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,286 +1,296 @@
-const timerDiv = document.getElementById("timer");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const exportBtn = document.getElementById("exportBtn");
-const clearBtn = document.getElementById("clearBtn");
-const addParamBtn = document.getElementById("addParamBtn");
+document.addEventListener("DOMContentLoaded", () => {
 
-const employeeInput = document.getElementById("employee");
-const reportInput = document.getElementById("report");
-const dateInput = document.getElementById("reportDate");
-const paramsContainer = document.getElementById("paramsContainer");
+  const timerDiv = document.getElementById("timer");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const addParamBtn = document.getElementById("addParamBtn");
 
-let timerInterval = null;
+  const employeeInput = document.getElementById("employee");
+  const reportInput = document.getElementById("report");
+  const dateInput = document.getElementById("reportDate");
+  const paramsContainer = document.getElementById("paramsContainer");
 
-/* Add Parameter */
-function addParam(key = "", value = "") {
-  const row = document.createElement("div");
-  row.className = "param-row";
-  row.innerHTML = `
-    <input class="paramKey" placeholder="Key" value="${key}">
-    <input class="paramValue" placeholder="Value" value="${value}">
-  `;
-  paramsContainer.appendChild(row);
-}
+  let timerInterval = null;
 
-addParamBtn.addEventListener("click", () => addParam());
+  /* Add Parameter */
+  function addParam(key = "", value = "") {
+    if (!paramsContainer) return;
 
-/* Format Duration */
-function formatDuration(seconds) {
-  if (seconds < 60) return seconds + "s";
-  if (seconds < 3600) return Math.floor(seconds / 60) + "m " + (seconds % 60) + "s";
-  return Math.floor(seconds / 3600) + "h " + Math.floor((seconds % 3600) / 60) + "m";
-}
-
-/* Update Timer */
-function updateTimer() {
-
-  chrome.runtime.sendMessage({ action: "getTime" }, (res) => {
-
-    if (res && res.currentStartTime) {
-
-      const seconds = Math.floor(
-        (new Date() - new Date(res.currentStartTime)) / 1000
-      );
-
-      timerDiv.textContent = formatDuration(seconds);
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-
-      if (!timerInterval) {
-        timerInterval = setInterval(updateTimer, 1000);
-      }
-
-    } else {
-
-      timerDiv.textContent = "Not Running";
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-
-    }
-
-  });
-
-}
-
-/* Start */
-startBtn.addEventListener("click", () => {
-
-  if (!employeeInput.value || !reportInput.value || !dateInput.value) {
-    alert("Please fill all fields");
-    return;
+    const row = document.createElement("div");
+    row.className = "param-row";
+    row.innerHTML = `
+      <input class="paramKey" placeholder="Key" value="${key}">
+      <input class="paramValue" placeholder="Value" value="${value}">
+    `;
+    paramsContainer.appendChild(row);
   }
 
-  // --------- SAVE CURRENT SESSION (NEW) ----------
-  const parameters = [];
+  addParamBtn.addEventListener("click", () => addParam());
 
-  document.querySelectorAll(".param-row").forEach(row => {
-    const key = row.querySelector(".paramKey").value.trim();
-    const value = row.querySelector(".paramValue").value.trim();
-    if (key || value) parameters.push({ key, value });
-  });
+  /* Format Duration */
+  function formatDuration(seconds) {
+    if (seconds < 60) return seconds + "s";
+    if (seconds < 3600) return Math.floor(seconds / 60) + "m " + (seconds % 60) + "s";
+    return Math.floor(seconds / 3600) + "h " + Math.floor((seconds % 3600) / 60) + "m";
+  }
 
-  chrome.storage.local.set({
-    currentSession: {
-      employee: employeeInput.value,
-      report: reportInput.value,
-      date: dateInput.value,
-      parameters
-    }
-  });
-  // -----------------------------------------------
+  /* Update Timer */
+  function updateTimer() {
 
-  chrome.runtime.sendMessage({ action: "startTimer" }, () => {
-    updateTimer();
-  });
+    chrome.runtime.sendMessage({ action: "getTime" }, (res) => {
 
-});
+      if (res && res.currentStartTime) {
 
-/* Stop */
-stopBtn.addEventListener("click", () => {
+        const seconds = Math.floor(
+          (new Date() - new Date(res.currentStartTime)) / 1000
+        );
 
-  chrome.runtime.sendMessage({ action: "stopTimer" }, (res) => {
+        timerDiv.textContent = formatDuration(seconds);
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
 
-    if (!res || !res.stopped) {
-      alert("Timer not running");
-      return;
-    }
+        if (!timerInterval) {
+          timerInterval = setInterval(updateTimer, 1000);
+        }
 
+      } else {
+
+        timerDiv.textContent = "Not Running";
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+
+      }
+
+    });
+
+  }
+
+  function collectParameters() {
     const parameters = [];
 
     document.querySelectorAll(".param-row").forEach(row => {
-      const key = row.querySelector(".paramKey").value.trim();
-      const value = row.querySelector(".paramValue").value.trim();
+      const keyEl = row.querySelector(".paramKey");
+      const valueEl = row.querySelector(".paramValue");
+
+      const key = keyEl ? keyEl.value.trim() : "";
+      const value = valueEl ? valueEl.value.trim() : "";
+
       if (key || value) parameters.push({ key, value });
     });
 
-    chrome.storage.local.get("logs", (data) => {
+    return parameters;
+  }
 
-      const logs = data.logs || [];
+  /* Start */
+  startBtn.addEventListener("click", () => {
 
-      logs.push({
-        employee: employeeInput.value,
-        report: reportInput.value,
-        date: dateInput.value,
-        start: res.startTime,
-        end: new Date().toISOString(),
-        parameters
-      });
-
-      chrome.storage.local.set({ logs }, () => {
-
-        // --------- CLEAR SAVED SESSION (NEW) ----------
-        chrome.storage.local.remove("currentSession");
-        // ---------------------------------------------
-
-        refreshLogsTable();
-        updateTimer();
-      });
-
-    });
-
-  });
-
-});
-
-/* Export */
-exportBtn.addEventListener("click", () => {
-
-  chrome.storage.local.get("logs", (data) => {
-
-    if (!data.logs || !data.logs.length) {
-      alert("No logs to export");
+    if (!employeeInput.value || !reportInput.value || !dateInput.value) {
+      alert("Please fill all fields");
       return;
     }
 
-    let csv = "Employee,Report,Date,Start,End,Duration(seconds),Parameters\n";
+    const parameters = collectParameters();
 
-    data.logs.forEach(log => {
-
-      const start = new Date(log.start);
-      const end = new Date(log.end);
-      const duration = Math.floor((end - start) / 1000);
-
-      const params = (log.parameters || [])
-        .map(p => `${p.key}:${p.value}`)
-        .join(" | ");
-
-      csv += `"${log.employee}","${log.report}","${log.date}","${log.start}","${log.end}","${duration}","${params}"\n`;
-
+    chrome.storage.local.set({
+      currentSession: {
+        employee: employeeInput.value,
+        report: reportInput.value,
+        date: dateInput.value,
+        parameters
+      }
     });
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    chrome.downloads.download({
-      url: url,
-      filename: "Universal_Task_Timer_Logs.csv",
-      saveAs: true
+    chrome.runtime.sendMessage({ action: "startTimer" }, () => {
+      updateTimer();
     });
 
   });
 
-});
+  /* Stop */
+  stopBtn.addEventListener("click", () => {
 
-/* Clear */
-clearBtn.addEventListener("click", () => {
-  if (!confirm("Clear all data?")) return;
+    chrome.runtime.sendMessage({ action: "stopTimer" }, (res) => {
 
-  chrome.storage.local.clear(() => {
-    refreshLogsTable();
-    updateTimer();
-  });
-});
+      if (!res || !res.stopped) {
+        alert("Timer not running");
+        return;
+      }
 
-/* Refresh Logs */
-function refreshLogsTable() {
+      const parameters = collectParameters();
 
-  chrome.storage.local.get("logs", (data) => {
+      chrome.storage.local.get("logs", (data) => {
 
-    const body = document.getElementById("logsBody");
-    const totalTimeEl = document.getElementById("totalTime");
+        const logs = data.logs || [];
 
-    body.innerHTML = "";
-    let totalSeconds = 0;
+        logs.push({
+          employee: employeeInput.value,
+          report: reportInput.value,
+          date: dateInput.value,
+          start: res.startTime,
+          end: new Date().toISOString(),
+          parameters
+        });
 
-    const logs = data.logs || [];
+        chrome.storage.local.set({ logs }, () => {
 
-    logs.forEach((log, index) => {
+          chrome.storage.local.remove("currentSession");
 
-      const duration = Math.floor(
-        (new Date(log.end) - new Date(log.start)) / 1000
-      );
+          refreshLogsTable();
+          updateTimer();
+        });
 
-      totalSeconds += duration;
-
-      const params = (log.parameters || [])
-        .map(p => `${p.key}:${p.value}`)
-        .join(" | ");
-
-      const row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td>${log.employee}</td>
-        <td>${log.report}</td>
-        <td>${log.date}</td>
-        <td>${log.start}</td>
-        <td>${log.end}</td>
-        <td>${duration}s</td>
-        <td>${params}</td>
-        <td><button class="deleteBtn" data-index="${index}">Delete</button></td>
-      `;
-
-      body.appendChild(row);
-
-    });
-
-    totalTimeEl.textContent = formatDuration(totalSeconds);
-
-    document.querySelectorAll(".deleteBtn").forEach(btn => {
-      btn.addEventListener("click", function () {
-        logs.splice(this.dataset.index, 1);
-        chrome.storage.local.set({ logs }, refreshLogsTable);
-      });
-    });
-
-  });
-
-}
-
-/* Restore current running session (NEW) */
-function restoreCurrentSession() {
-
-  chrome.runtime.sendMessage({ action: "getTime" }, (res) => {
-
-    if (!res || !res.currentStartTime) return;
-
-    chrome.storage.local.get("currentSession", (data) => {
-
-      if (!data.currentSession) return;
-
-      const s = data.currentSession;
-
-      employeeInput.value = s.employee || "";
-      reportInput.value = s.report || "";
-      dateInput.value = s.date || "";
-
-      paramsContainer.innerHTML = "";
-
-      (s.parameters || []).forEach(p => {
-        addParam(p.key, p.value);
       });
 
     });
 
   });
 
-}
+  /* Export */
+  exportBtn.addEventListener("click", () => {
 
-updateTimer();
-refreshLogsTable();
-restoreCurrentSession();
+    chrome.storage.local.get("logs", (data) => {
+
+      if (!data.logs || !data.logs.length) {
+        alert("No logs to export");
+        return;
+      }
+
+      let csv = "Employee,Report,Date,Start,End,Duration(seconds),Parameters\n";
+
+      data.logs.forEach(log => {
+
+        const start = new Date(log.start);
+        const end = new Date(log.end);
+        const duration = Math.floor((end - start) / 1000);
+
+        const params = (log.parameters || [])
+          .map(p => `${p.key}:${p.value}`)
+          .join(" | ");
+
+        csv += `"${log.employee}","${log.report}","${log.date}","${log.start}","${log.end}","${duration}","${params}"\n`;
+
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      chrome.downloads.download({
+        url: url,
+        filename: "Universal_Task_Timer_Logs.csv",
+        saveAs: true
+      });
+
+    });
+
+  });
+
+  /* Clear */
+  clearBtn.addEventListener("click", () => {
+    if (!confirm("Clear all data?")) return;
+
+    chrome.storage.local.clear(() => {
+      refreshLogsTable();
+      updateTimer();
+    });
+  });
+
+  /* Refresh Logs */
+  function refreshLogsTable() {
+
+    chrome.storage.local.get("logs", (data) => {
+
+      const body = document.getElementById("logsBody");
+      const totalTimeEl = document.getElementById("totalTime");
+
+      if (!body || !totalTimeEl) return;
+
+      body.innerHTML = "";
+      let totalSeconds = 0;
+
+      const logs = data.logs || [];
+
+      logs.forEach((log, index) => {
+
+        const duration = Math.floor(
+          (new Date(log.end) - new Date(log.start)) / 1000
+        );
+
+        totalSeconds += duration;
+
+        const params = (log.parameters || [])
+          .map(p => `${p.key}:${p.value}`)
+          .join(" | ");
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${log.employee}</td>
+          <td>${log.report}</td>
+          <td>${log.date}</td>
+          <td>${log.start}</td>
+          <td>${log.end}</td>
+          <td>${duration}s</td>
+          <td>${params}</td>
+          <td><button class="deleteBtn" data-index="${index}">Delete</button></td>
+        `;
+
+        body.appendChild(row);
+
+      });
+
+      totalTimeEl.textContent = formatDuration(totalSeconds);
+
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", function () {
+          logs.splice(this.dataset.index, 1);
+          chrome.storage.local.set({ logs }, refreshLogsTable);
+        });
+      });
+
+    });
+
+  }
+
+  /* Restore current running session */
+  function restoreCurrentSession() {
+
+    chrome.runtime.sendMessage({ action: "getTime" }, (res) => {
+
+      if (!res || !res.currentStartTime) return;
+
+      chrome.storage.local.get("currentSession", (data) => {
+
+        if (!data.currentSession) return;
+
+        const s = data.currentSession;
+
+        employeeInput.value = s.employee || "";
+        reportInput.value = s.report || "";
+        dateInput.value = s.date || "";
+
+        if (paramsContainer) {
+          paramsContainer.innerHTML = "";
+        }
+
+        (s.parameters || []).forEach(p => {
+          addParam(p.key, p.value);
+        });
+
+      });
+
+    });
+
+  }
+
+  updateTimer();
+  refreshLogsTable();
+  restoreCurrentSession();
+
+});
